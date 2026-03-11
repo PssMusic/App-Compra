@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COMPRA - Gestión Multi-Vehículo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <i class="fas fa-car-side"></i>
+                <h2>COMPRA</h2>
+                <button id="close-menu" class="mobile-only-btn"><i class="fas fa-times"></i></button>
+            </div>
+            <nav class="menu">
+                <button class="menu-btn active" data-target="vehiculos"><i class="fas fa-car"></i> Mis Vehículos</button>
+                <button class="menu-btn vehiculo-dependiente d-none" data-target="dashboard"><i class="fas fa-chart-pie"></i> Resumen</button>
+                <button class="menu-btn vehiculo-dependiente d-none" data-target="inversionistas"><i class="fas fa-users"></i> Inversionistas</button>
+                <button class="menu-btn vehiculo-dependiente d-none" data-target="gastos"><i class="fas fa-file-invoice-dollar"></i> Gastos</button>
+                <button class="menu-btn vehiculo-dependiente d-none" data-target="venta"><i class="fas fa-hand-holding-dollar"></i> Venta y Ganancias</button>
+                <button class="menu-btn" data-target="archivos"><i class="fas fa-save"></i> Reportes y Datos</button>
+            </nav>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <div class="header-left">
+                    <button id="open-menu" class="menu-toggle"><i class="fas fa-bars"></i></button>
+                    <div>
+                        <h1 id="page-title">Mis Vehículos</h1>
+                        <span id="active-placa-badge" class="badge">Ningún vehículo seleccionado</span>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <button id="btn-theme-toggle" class="btn-icon" title="Cambiar Tema"><i class="fas fa-moon"></i></button>
+                </div>
+            </header>
+
+            <div id="alerta-seleccion" class="alerta-warning">
+                <i class="fas fa-exclamation-triangle"></i> Por favor, selecciona o registra un vehículo en la pestaña "Mis Vehículos" para gestionar sus datos.
+            </div>
+
+            <section id="vehiculos" class="view active">
+                <div class="action-bar mb-3">
+                    <button id="btn-add-vehiculo" class="btn-primary"><i class="fas fa-plus"></i> Agregar Vehículo</button>
+                </div>
+                
+                <div class="form-panel d-none" id="panel-form-vehiculo">
+                    <h3 id="titulo-form-vehiculo">Registrar Nuevo Vehículo</h3>
+                    <form id="form-vehiculo">
+                        <input type="hidden" id="veh-id">
+                        <div class="input-row">
+                            <input type="text" id="veh-placa" placeholder="Placa (Ej: ABC-123)" required style="text-transform: uppercase;">
+                            <input type="text" id="veh-marca" placeholder="Marca (Ej: Chevrolet)" required>
+                            <input type="number" id="veh-modelo" placeholder="Modelo (Año)" required>
+                        </div>
+                        <div class="input-row">
+                            <input type="text" id="veh-transito" placeholder="Tránsito (Ej: Sabaneta)">
+                            <input type="text" id="veh-obs" placeholder="Observaciones (Opcional)" style="flex: 2;">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary" id="btn-submit-vehiculo"><i class="fas fa-save"></i> Guardar Vehículo</button>
+                            <button type="button" class="btn-secondary" id="btn-cancel-vehiculo"><i class="fas fa-times"></i> Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="table-container">
+                    <table id="tabla-vehiculos">
+                        <thead><tr><th>Placa</th><th>Marca</th><th>Modelo (Año)</th><th>Detalles</th><th>Acciones</th></tr></thead>
+                        <tbody class="clickable-rows" title="Doble clic para editar"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="dashboard" class="view vehiculo-view">
+                <div class="cards-grid">
+                    <div class="card"><i class="fas fa-wallet"></i><div><h3>Total Aportado</h3><p id="dash-aportes">$0</p></div></div>
+                    <div class="card"><i class="fas fa-receipt"></i><div><h3>Total Gastos</h3><p id="dash-gastos">$0</p></div></div>
+                    <div class="card"><i class="fas fa-tag"></i><div><h3>Valor Venta</h3><p id="dash-venta">$0</p></div></div>
+                    <div class="card highlight"><i class="fas fa-money-bill-wave"></i><div><h3>Dinero a Repartir</h3><p id="dash-neto">$0</p></div></div>
+                </div>
+            </section>
+
+            <section id="inversionistas" class="view vehiculo-view">
+                <div class="action-bar mb-3">
+                    <button id="btn-add-inv" class="btn-primary"><i class="fas fa-plus"></i> Agregar Inversionista</button>
+                </div>
+
+                <div id="panel-form-inv" class="d-none">
+                    <div class="cards-grid" style="margin-bottom: 20px;">
+                        <div class="form-panel" style="margin-bottom: 0; flex: 2;">
+                            <h3 id="titulo-form-inv">Agregar Inversionista</h3>
+                            <form id="form-inversionista">
+                                <input type="hidden" id="inv-id">
+                                <input type="text" id="inv-nombre" placeholder="Nombre completo" required>
+                                <input type="number" id="inv-aporte" placeholder="Valor aportado" min="1" required>
+                                <div class="form-actions">
+                                    <button type="submit" class="btn-primary" id="btn-submit-inv"><i class="fas fa-save"></i> Guardar</button>
+                                    <button type="button" class="btn-secondary" id="btn-cancel-inv"><i class="fas fa-times"></i> Cancelar</button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <div class="form-panel import-panel">
+                            <h3><i class="fas fa-file-import"></i> Importar Inversionistas</h3>
+                            <div class="input-group" style="display: flex; flex-direction: column; gap: 10px;">
+                                <select id="select-import-vehiculo">
+                                    <option value="">Seleccione vehículo origen...</option>
+                                </select>
+                                <button id="btn-import-inv" class="btn-secondary" style="width: 100%;"><i class="fas fa-copy"></i> Traer Datos</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table id="tabla-inversionistas">
+                        <thead><tr><th>Nombre</th><th>Valor Aportado</th><th>Porcentaje</th><th>Acciones</th></tr></thead>
+                        <tbody class="clickable-rows" title="Doble clic para editar"></tbody>
+                        <tfoot>
+                            <tr class="table-total">
+                                <td><strong>Total Invertido:</strong></td>
+                                <td id="inv-total-val"><strong>$0</strong></td>
+                                <td><strong>100%</strong></td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </section>
+
+            <section id="gastos" class="view vehiculo-view">
+                <div class="action-bar mb-3">
+                    <button id="btn-add-gasto" class="btn-primary"><i class="fas fa-plus"></i> Agregar Gasto</button>
+                </div>
+
+                <div class="form-panel d-none" id="panel-form-gasto">
+                    <h3 id="titulo-form-gasto">Registrar Gasto</h3>
+                    <form id="form-gasto">
+                        <input type="hidden" id="gasto-id">
+                        <div class="input-row">
+                            <input type="date" id="gasto-fecha" required title="Fecha del gasto">
+                            <input type="text" id="gasto-concepto" placeholder="Concepto (ej. Traspaso)" required>
+                            <input type="number" id="gasto-valor" placeholder="Valor del gasto" min="1" required>
+                        </div>
+                        <div class="input-row">
+                            <input type="text" id="gasto-desc" placeholder="Descripción (Opcional)" style="flex: 1;">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn-primary" id="btn-submit-gasto"><i class="fas fa-save"></i> Guardar Gasto</button>
+                            <button type="button" class="btn-secondary" id="btn-cancel-gasto"><i class="fas fa-times"></i> Cancelar</button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="table-container">
+                    <table id="tabla-gastos">
+                        <thead><tr><th>Fecha</th><th>Concepto</th><th>Descripción</th><th>Valor</th><th>Acciones</th></tr></thead>
+                        <tbody class="clickable-rows" title="Doble clic para editar"></tbody>
+                        <tfoot>
+                            <tr class="table-total">
+                                <td colspan="3"><strong>Total Gastos:</strong></td>
+                                <td id="gas-total-val" colspan="2"><strong>$0</strong></td>
+                            </tr>
+                            <tr class="table-total highlight-row">
+                                <td colspan="3"><strong>Fondo Restante (Inversión Inicial - Gastos):</strong></td>
+                                <td id="gas-saldo-val" colspan="2"><strong>$0</strong></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </section>
+
+            <section id="venta" class="view vehiculo-view">
+                
+                <div id="venta-display" class="cards-grid mb-3">
+                    <div class="card"><i class="fas fa-calendar-alt"></i><div><h3>Fecha de Venta</h3><p id="disp-fecha-venta">---</p></div></div>
+                    <div class="card highlight"><i class="fas fa-hand-holding-dollar"></i><div><h3>Valor de Venta</h3><p id="disp-valor-venta">$0</p></div></div>
+                    <div class="action-bar align-center" style="display: flex; align-items: center; justify-content: flex-end;">
+                        <button id="btn-add-venta" class="btn-primary"><i class="fas fa-edit"></i> Editar Venta</button>
+                    </div>
+                </div>
+
+                <div class="form-panel venta-panel d-none mb-3" id="panel-form-venta">
+                    <h3>Registrar Venta</h3>
+                    <div class="input-row align-center">
+                        <div style="flex: 1;">
+                            <label style="font-size: 0.8rem; color: var(--text-muted); display:block; margin-bottom: 5px;">Fecha de Venta</label>
+                            <input type="date" id="fecha-venta-input" style="width: 100%;">
+                        </div>
+                        <div style="flex: 2;">
+                            <label style="font-size: 0.8rem; color: var(--text-muted); display:block; margin-bottom: 5px;">Valor de Venta Final</label>
+                            <input type="number" id="valor-venta-input" placeholder="Ingrese el valor de venta" style="width: 100%;">
+                        </div>
+                    </div>
+                    <div class="form-actions mt-2">
+                        <button id="btn-guardar-venta" class="btn-primary"><i class="fas fa-save"></i> Guardar Venta</button>
+                        <button type="button" class="btn-secondary" id="btn-cancel-venta"><i class="fas fa-times"></i> Cancelar</button>
+                    </div>
+                </div>
+                
+                <div class="table-container mt-2">
+                    <h3>Distribución de Ganancias</h3>
+                    <table id="tabla-distribucion">
+                        <thead><tr><th>Nombre</th><th>Aporte Inicial</th><th>%</th><th>INVERSIÓN</th><th>FALTANTE</th><th>Valor a Recibir</th><th>TOTAL (Inv+Recibir)</th><th>Reinvertir</th></tr></thead>
+                        <tbody></tbody>
+                        <tfoot></tfoot>
+                    </table>
+                </div>
+            </section>
+
+            <section id="archivos" class="view">
+                <div class="form-panel" id="panel-reportes" style="border: 2px solid var(--primary);">
+                    <h3 style="color: var(--primary);"><i class="fas fa-print"></i> Generar Reporte del Vehículo Actual</h3>
+                    <p style="margin-bottom: 15px; color: var(--text-muted);">Selecciona qué información deseas incluir en el documento final:</p>
+                    
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="chk-resumen" checked> <span>Resumen Financiero</span></label>
+                        <label><input type="checkbox" id="chk-inversores" checked> <span>Tabla Inversionistas</span></label>
+                        <label><input type="checkbox" id="chk-gastos" checked> <span>Tabla Gastos</span></label>
+                        <label><input type="checkbox" id="chk-distribucion" checked> <span>Distribución / Venta</span></label>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="btn-export-pdf" class="btn-primary" style="background-color: #dc2626;"><i class="fas fa-file-pdf"></i> Descargar PDF</button>
+                        <button id="btn-export-html" class="btn-primary" style="background-color: #2563eb;"><i class="fas fa-file-code"></i> Descargar HTML</button>
+                    </div>
+                </div>
+
+                <div class="cards-grid mt-2">
+                    <div class="action-card">
+                        <i class="fas fa-download"></i>
+                        <h3>Guardar Datos del Sistema</h3>
+                        <p>Crea una copia de seguridad de todos los vehículos (.json).</p>
+                        <button id="btn-export-json" class="btn-primary">Exportar Backup</button>
+                    </div>
+                    <div class="action-card">
+                        <i class="fas fa-upload"></i>
+                        <h3>Cargar Datos del Sistema</h3>
+                        <p>Restaura la base de datos completa desde un backup.</p>
+                        <input type="file" id="input-import-json" accept=".json" style="display: none;">
+                        <button id="btn-import-json" class="btn-secondary">Seleccionar Archivo</button>
+                    </div>
+                    <div class="action-card">
+                        <i class="fas fa-trash-alt" style="color: var(--danger);"></i>
+                        <h3>Borrar Sistema</h3>
+                        <p>Elimina todos los vehículos y vacía la base de datos.</p>
+                        <button id="btn-clear-data" class="btn-danger">Reiniciar Todo</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <div id="modal-reinvertir" class="modal-overlay d-none">
+        <div class="modal-content form-panel" style="margin: 0; padding: 25px;">
+            <h3 style="color: var(--success);"><i class="fas fa-recycle"></i> Reinvertir Capital</h3>
+            <p style="margin-bottom: 5px;">Inversor: <strong id="reinv-nombre" style="color: var(--primary);"></strong></p>
+            <p style="margin-bottom: 15px;">Monto total a trasladar: <strong id="reinv-monto-display" style="color: var(--success);"></strong></p>
+            
+            <form id="form-reinvertir">
+                <input type="hidden" id="reinv-nombre-val">
+                <input type="hidden" id="reinv-monto-val">
+                
+                <div style="margin-bottom: 15px; width: 100%;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">Destino de la reinversión:</label>
+                    <select id="reinv-destino" required style="width: 100%;">
+                        <option value="">Seleccione a dónde enviar el dinero...</option>
+                        <option value="NEW" style="font-weight: bold; color: var(--primary);">✨ CREAR UN NUEVO VEHÍCULO</option>
+                        </select>
+                </div>
+
+                <div id="reinv-new-veh-fields" class="d-none" style="margin-bottom: 15px; border-left: 3px solid var(--primary); padding-left: 15px; width: 100%;">
+                    <label style="display: block; margin-bottom: 10px; font-weight: 500; font-size: 0.9rem; color: var(--primary);">Datos del nuevo vehículo:</label>
+                    <div class="input-row" style="flex-direction: column;">
+                        <input type="text" id="reinv-placa" placeholder="Placa (Ej: ABC-123)" style="text-transform: uppercase;">
+                        <input type="text" id="reinv-marca" placeholder="Marca">
+                        <input type="number" id="reinv-modelo" placeholder="Modelo (Año)">
+                    </div>
+                </div>
+
+                <div class="form-actions" style="margin-top: 20px;">
+                    <button type="submit" class="btn-success" style="flex: 1;"><i class="fas fa-check"></i> Confirmar</button>
+                    <button type="button" class="btn-secondary" onclick="UI.closeReinvertirModal()" style="flex: 1;"><i class="fas fa-times"></i> Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="pdf-container" style="display: none;"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
