@@ -4,10 +4,153 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>COMPRA - Gestión Multi-Vehículo</title>
+    
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <link rel="stylesheet" href="style.css">
+
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --primary-hover: #1e40af;
+            --secondary: #64748b;
+            --bg-color: #f1f5f9;
+            --surface: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --border: #e2e8f0;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --edit: #0284c7;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        body.dark-mode {
+            --primary: #3b82f6;
+            --primary-hover: #60a5fa;
+            --secondary: #94a3b8;
+            --bg-color: #0f172a;
+            --surface: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+            --border: #334155;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-main); transition: background-color 0.3s, color 0.3s; }
+
+        .d-none { display: none !important; }
+        .mb-3 { margin-bottom: 15px; }
+        .mt-2 { margin-top: 20px; }
+        .action-bar { display: flex; justify-content: flex-end; }
+
+        .app-container { display: flex; height: 100vh; overflow: hidden; position: relative; }
+
+        .sidebar { width: 260px; background-color: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 1000; transition: transform 0.3s ease; }
+        .logo { padding: 20px; display: flex; align-items: center; justify-content: space-between; color: var(--primary); font-size: 1.2rem; border-bottom: 1px solid var(--border); }
+        .logo div { display: flex; align-items: center; gap: 10px; }
+        .menu { display: flex; flex-direction: column; padding: 15px 0; overflow-y: auto; }
+        .menu-btn { background: none; border: none; padding: 15px 20px; text-align: left; font-size: 1rem; color: var(--text-muted); cursor: pointer; transition: var(--transition); display: flex; align-items: center; gap: 12px; }
+        .menu-btn:hover, .menu-btn.active { background-color: rgba(59, 130, 246, 0.1); color: var(--primary); border-right: 4px solid var(--primary); }
+
+        .sidebar-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999; }
+
+        /* Estilos de Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+        .modal-content { background: var(--surface); width: 90%; max-width: 450px; border-radius: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); border: 1px solid var(--border); }
+
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+        .topbar { padding: 20px 30px; background-color: var(--surface); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .header-right { display: flex; align-items: center; }
+        #page-title { font-size: 1.5rem; }
+        .badge { background: var(--secondary); color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; }
+        .badge.active-badge { background: var(--success); }
+
+        .btn-icon { background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; transition: var(--transition); }
+        .btn-icon:hover { color: var(--primary); transform: scale(1.1); }
+
+        .view { display: none; padding: 30px; animation: fadeIn 0.4s ease; }
+        .view.active { display: block; }
+
+        .alerta-warning { background-color: rgba(245, 158, 11, 0.1); color: var(--warning); padding: 15px 30px; display: none; border-bottom: 1px solid var(--warning); font-weight: 500; text-align: center; }
+
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; }
+        .card, .action-card { background-color: var(--surface); padding: 20px; border-radius: 10px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 15px; border: 1px solid transparent; }
+        .card i { font-size: 2rem; color: var(--primary); background: rgba(59, 130, 246, 0.1); padding: 15px; border-radius: 50%; flex-shrink: 0; }
+        .card.highlight { border: 1px solid var(--success); }
+        .card.highlight i { color: var(--success); background: rgba(16, 185, 129, 0.1); }
+        .card div { overflow: hidden; }
+        .card h3 { font-size: 0.9rem; color: var(--text-muted); font-weight: 500; white-space: nowrap; }
+        .card p { font-size: clamp(1.2rem, 2vw, 1.5rem); font-weight: 700; color: var(--text-main); margin-top: 5px; word-break: break-all; }
+
+        .form-panel { background: var(--surface); padding: 20px; border-radius: 10px; box-shadow: var(--shadow); margin-bottom: 20px; transition: var(--transition); border: 1px solid var(--border); }
+        .form-panel.edit-mode { border: 2px solid var(--edit); box-shadow: 0 0 10px rgba(2, 132, 199, 0.2); }
+        .form-panel h3 { margin-bottom: 15px; color: var(--primary); font-size: 1.1rem; }
+        .form-panel.edit-mode h3 { color: var(--edit); }
+        .import-panel { background-color: rgba(100, 116, 139, 0.05); border: 1px dashed var(--secondary); flex: 1; margin-bottom: 0; }
+
+        form { display: flex; flex-direction: column; gap: 15px; }
+        .input-row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .align-center { align-items: flex-end; }
+        input, select { flex: 1; min-width: 150px; padding: 10px 15px; border: 1px solid var(--border); border-radius: 5px; font-family: inherit; font-size: 0.95rem; background-color: var(--surface); color: var(--text-main); }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2); }
+        .form-actions { display: flex; gap: 10px; margin-top: 5px; }
+
+        /* Grid para Checkboxes */
+        .checkbox-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; background-color: rgba(100, 116, 139, 0.05); padding: 20px; border-radius: 8px; border: 1px solid var(--border); }
+        .checkbox-group label { display: flex; align-items: center; gap: 10px; cursor: pointer; color: var(--text-main); font-size: 0.95rem; font-weight: 500; }
+        .checkbox-group label span { word-wrap: break-word; overflow-wrap: break-word; white-space: normal; flex: 1; }
+        .checkbox-group input[type="checkbox"] { flex-shrink: 0; width: 20px !important; height: 20px !important; min-width: 20px; cursor: pointer; accent-color: var(--primary); margin: 0; }
+
+        button { padding: 10px 20px; border-radius: 5px; font-weight: 500; cursor: pointer; border: none; transition: var(--transition); display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-family: inherit; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+        .btn-secondary { background-color: var(--secondary); color: white; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-success { background-color: var(--success); color: white; }
+        .btn-warning { background-color: var(--warning); color: white; }
+        .btn-sm { padding: 6px 10px; font-size: 0.85rem; }
+
+        .menu-toggle, .mobile-only-btn { display: none; background: none; color: var(--primary); font-size: 1.5rem; padding: 5px; }
+
+        .table-container { background: var(--surface); border-radius: 10px; box-shadow: var(--shadow); width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; text-align: left; min-width: max-content; }
+        th, td { padding: 12px 15px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        th { background-color: rgba(100, 116, 139, 0.05); color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.8rem; white-space: nowrap; }
+        
+        .clickable-rows tr { cursor: pointer; transition: background-color 0.2s; }
+        .clickable-rows tr:hover { background-color: rgba(59, 130, 246, 0.05); }
+        .clickable-rows tr.active-row { background-color: rgba(59, 130, 246, 0.1); border-left: 3px solid var(--primary); }
+
+        tfoot { background-color: rgba(100, 116, 139, 0.05); }
+        .table-total td { border-top: 2px solid var(--border); }
+        .highlight-row td { color: var(--primary); font-size: 1.05rem; }
+        .action-buttons { display: flex; gap: 5px; }
+
+        .action-card { flex-direction: column; text-align: center; }
+        .action-card p { font-size: 0.9rem; margin: 10px 0; color: var(--text-muted); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 850px) {
+            .menu-toggle { display: block; }
+            .mobile-only-btn { display: block; }
+            .sidebar { position: fixed; left: -260px; top: 0; bottom: 0; height: 100vh; }
+            .sidebar.open { transform: translateX(260px); }
+            .sidebar-overlay.show { display: block; }
+            .view { padding: 15px; }
+            .topbar { padding: 15px; }
+            #page-title { font-size: 1.1rem; }
+            .badge { display: block; margin-top: 5px; width: fit-content; }
+            .input-row { flex-direction: column; gap: 10px; }
+            input, select { width: 100%; min-width: 100%; }
+        }
+    </style>
 </head>
 <body>
     <div class="app-container">
@@ -75,7 +218,7 @@
                 <div class="table-container">
                     <table id="tabla-vehiculos">
                         <thead><tr><th>Placa</th><th>Marca</th><th>Modelo (Año)</th><th>Detalles</th><th>Acciones</th></tr></thead>
-                        <tbody class="clickable-rows" title="Doble clic para editar"></tbody>
+                        <tbody class="clickable-rows" title="Clic para abrir, doble clic para editar"></tbody>
                     </table>
                 </div>
             </section>
@@ -85,7 +228,7 @@
                     <div class="card"><i class="fas fa-wallet"></i><div><h3>Total Aportado</h3><p id="dash-aportes">$0</p></div></div>
                     <div class="card"><i class="fas fa-receipt"></i><div><h3>Total Gastos</h3><p id="dash-gastos">$0</p></div></div>
                     <div class="card"><i class="fas fa-tag"></i><div><h3>Valor Venta</h3><p id="dash-venta">$0</p></div></div>
-                    <div class="card highlight"><i class="fas fa-money-bill-wave"></i><div><h3>Dinero a Repartir</h3><p id="dash-neto">$0</p></div></div>
+                    <div class="card highlight"><i class="fas fa-money-bill-wave"></i><div><h3>Ganancias</h3><p id="dash-neto">$0</p></div></div>
                 </div>
             </section>
 
@@ -171,7 +314,7 @@
                                 <td id="gas-total-val" colspan="2"><strong>$0</strong></td>
                             </tr>
                             <tr class="table-total highlight-row">
-                                <td colspan="3"><strong>Fondo Restante (Inversión Inicial - Gastos):</strong></td>
+                                <td colspan="3"><strong>Fondo Restante:</strong></td>
                                 <td id="gas-saldo-val" colspan="2"><strong>$0</strong></td>
                             </tr>
                         </tfoot>
@@ -182,8 +325,12 @@
             <section id="venta" class="view vehiculo-view">
                 
                 <div id="venta-display" class="cards-grid mb-3">
-                    <div class="card"><i class="fas fa-calendar-alt"></i><div><h3>Fecha de Venta</h3><p id="disp-fecha-venta">---</p></div></div>
-                    <div class="card highlight"><i class="fas fa-hand-holding-dollar"></i><div><h3>Valor de Venta</h3><p id="disp-valor-venta">$0</p></div></div>
+                    <div class="card"><i class="fas fa-calendar-alt"></i><div><h3>Fecha</h3><p id="disp-fecha-venta">---</p></div></div>
+                    <div class="card highlight"><i class="fas fa-hand-holding-dollar"></i><div><h3>Valor Venta</h3><p id="disp-valor-venta">$0</p></div></div>
+                    <div class="card" id="card-comision" style="display: none; border: 1px solid var(--warning);">
+                        <i class="fas fa-percentage" style="color: var(--warning); background: rgba(245, 158, 11, 0.1);"></i>
+                        <div><h3 style="color: var(--warning);">Comisión (3%)</h3><p id="disp-comision" style="color: var(--warning);">$0</p></div>
+                    </div>
                     <div class="action-bar align-center" style="display: flex; align-items: center; justify-content: flex-end;">
                         <button id="btn-add-venta" class="btn-primary"><i class="fas fa-edit"></i> Editar Venta</button>
                     </div>
@@ -199,6 +346,11 @@
                         <div style="flex: 2;">
                             <label style="font-size: 0.8rem; color: var(--text-muted); display:block; margin-bottom: 5px;">Valor de Venta Final</label>
                             <input type="number" id="valor-venta-input" placeholder="Ingrese el valor de venta" style="width: 100%;">
+                        </div>
+                        <div style="flex: 1; padding-bottom: 10px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-main); font-weight: 500;">
+                                <input type="checkbox" id="chk-comision" style="width: 20px; min-width: 20px;"> Aplica Comisión (3%)
+                            </label>
                         </div>
                     </div>
                     <div class="form-actions mt-2">
@@ -240,20 +392,20 @@
                         <i class="fas fa-download"></i>
                         <h3>Guardar Datos del Sistema</h3>
                         <p>Crea una copia de seguridad de todos los vehículos (.json).</p>
-                        <button id="btn-export-json" class="btn-primary">Exportar Backup</button>
+                        <button id="btn-export-json" class="btn-primary">Guardar</button>
                     </div>
                     <div class="action-card">
-                        <i class="fas fa-upload"></i>
+                        <i class="fas fa-folder-open"></i>
                         <h3>Cargar Datos del Sistema</h3>
                         <p>Restaura la base de datos completa desde un backup.</p>
                         <input type="file" id="input-import-json" accept=".json" style="display: none;">
-                        <button id="btn-import-json" class="btn-secondary">Seleccionar Archivo</button>
+                        <button id="btn-import-json" class="btn-secondary">Abrir</button>
                     </div>
                     <div class="action-card">
-                        <i class="fas fa-trash-alt" style="color: var(--danger);"></i>
+                        <i class="fas fa-broom" style="color: var(--danger);"></i>
                         <h3>Borrar Sistema</h3>
                         <p>Elimina todos los vehículos y vacía la base de datos.</p>
-                        <button id="btn-clear-data" class="btn-danger">Reiniciar Todo</button>
+                        <button id="btn-clear-data" class="btn-danger">Limpiar</button>
                     </div>
                 </div>
             </section>
@@ -297,6 +449,752 @@
 
     <div id="pdf-container" style="display: none;"></div>
 
-    <script src="app.js"></script>
+    <script>
+        /**
+         * COMPRA APP - Lógica Multi-Vehículo
+         */
+        let appData = { vehiculos: [], activeId: null };
+
+        const DataManager = {
+            save: () => localStorage.setItem('compra_data_v6', JSON.stringify(appData)),
+            load: () => {
+                const stored = localStorage.getItem('compra_data_v6');
+                if (stored) appData = JSON.parse(stored);
+                
+                const isDark = localStorage.getItem('compra_dark_mode') === 'true';
+                if (isDark) document.body.classList.add('dark-mode');
+            },
+            clear: () => {
+                appData = { vehiculos: [], activeId: null };
+                DataManager.save();
+            },
+            getActive: () => appData.vehiculos.find(v => v.id === appData.activeId)
+        };
+
+        const Calc = {
+            getTotalAportes: (v) => v ? v.inversionistas.reduce((sum, i) => sum + Number(i.aporte), 0) : 0,
+            getTotalGastos: (v) => v ? v.gastos.reduce((sum, g) => sum + Number(g.valor), 0) : 0,
+            getDineroARepartir: (v) => {
+                if (!v) return 0;
+                const comision = v.aplicaComision ? (v.valorVenta * 0.03) : 0;
+                return (v.valorVenta || 0) - comision - Calc.getTotalGastos(v);
+            },
+            formatMoney: (amount) => new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(amount),
+            formatDate: (dateStr) => {
+                if (!dateStr) return '---';
+                const [year, month, day] = dateStr.split('-');
+                return `${day}/${month}/${year}`;
+            }
+        };
+
+        const UI = {
+            init: () => {
+                DataManager.load();
+                UI.setupMobileMenu();
+                UI.setupNavigation();
+                UI.setupThemeToggle();
+                UI.setupForms();
+                UI.setupFileManagement();
+                UI.setupImportFeature();
+                UI.setupReinvertirFeature();
+                UI.checkActiveVehicle();
+                UI.renderAll();
+            },
+
+            setupThemeToggle: () => {
+                document.getElementById('btn-theme-toggle').addEventListener('click', () => {
+                    document.body.classList.toggle('dark-mode');
+                    localStorage.setItem('compra_dark_mode', document.body.classList.contains('dark-mode'));
+                });
+            },
+
+            setupMobileMenu: () => {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('sidebar-overlay');
+                const toggleMenu = () => { sidebar.classList.toggle('open'); overlay.classList.toggle('show'); };
+                
+                document.getElementById('open-menu').addEventListener('click', toggleMenu);
+                document.getElementById('close-menu').addEventListener('click', toggleMenu);
+                overlay.addEventListener('click', toggleMenu);
+                
+                document.querySelectorAll('.menu-btn').forEach(btn => {
+                    btn.addEventListener('click', () => { if (window.innerWidth <= 850) toggleMenu(); });
+                });
+            },
+
+            setupNavigation: () => {
+                const buttons = document.querySelectorAll('.menu-btn');
+                const views = document.querySelectorAll('.view');
+                const title = document.getElementById('page-title');
+
+                buttons.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        if (e.currentTarget.classList.contains('d-none')) return;
+
+                        buttons.forEach(b => b.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        
+                        const target = e.currentTarget.dataset.target;
+                        views.forEach(v => v.classList.remove('active'));
+                        document.getElementById(target).classList.add('active');
+                        
+                        title.textContent = e.currentTarget.textContent.trim();
+                    });
+                });
+            },
+
+            checkActiveVehicle: () => {
+                const badge = document.getElementById('active-placa-badge');
+                const alertBox = document.getElementById('alerta-seleccion');
+                const activeVeh = DataManager.getActive();
+                const menuDependientes = document.querySelectorAll('.vehiculo-dependiente');
+
+                UI.resetFormVehiculo(); UI.resetFormInv(); UI.resetFormGasto(); UI.resetFormVenta();
+
+                if (activeVeh) {
+                    let transitoTxt = activeVeh.transito ? ` - ${activeVeh.transito}` : '';
+                    badge.textContent = `Vehículo: ${activeVeh.placa} | ${activeVeh.marca} ${activeVeh.modelo}${transitoTxt}`;
+                    badge.classList.add('active-badge');
+                    alertBox.style.display = 'none';
+                    menuDependientes.forEach(btn => btn.classList.remove('d-none'));
+                    UI.updateImportSelect(activeVeh.id);
+                } else {
+                    badge.textContent = 'Ningún vehículo seleccionado';
+                    badge.classList.remove('active-badge');
+                    alertBox.style.display = 'block';
+                    menuDependientes.forEach(btn => btn.classList.add('d-none'));
+                    document.querySelector('.menu-btn[data-target="vehiculos"]').click();
+                }
+            },
+
+            toggleForm: (panelId, btnId, show) => {
+                const panel = document.getElementById(panelId);
+                const btn = document.getElementById(btnId);
+                if(show) { panel.classList.remove('d-none'); btn.classList.add('d-none'); } 
+                else { panel.classList.add('d-none'); btn.classList.remove('d-none'); }
+            },
+
+            setupForms: () => {
+                document.getElementById('btn-add-vehiculo').addEventListener('click', () => UI.toggleForm('panel-form-vehiculo', 'btn-add-vehiculo', true));
+                document.getElementById('btn-add-inv').addEventListener('click', () => UI.toggleForm('panel-form-inv', 'btn-add-inv', true));
+                document.getElementById('btn-add-gasto').addEventListener('click', () => UI.toggleForm('panel-form-gasto', 'btn-add-gasto', true));
+                document.getElementById('btn-add-venta').addEventListener('click', () => UI.toggleForm('panel-form-venta', 'btn-add-venta', true));
+
+                document.getElementById('btn-cancel-vehiculo').addEventListener('click', () => UI.resetFormVehiculo());
+                document.getElementById('btn-cancel-inv').addEventListener('click', () => UI.resetFormInv());
+                document.getElementById('btn-cancel-gasto').addEventListener('click', () => UI.resetFormGasto());
+                document.getElementById('btn-cancel-venta').addEventListener('click', () => UI.resetFormVenta());
+
+                document.getElementById('form-vehiculo').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const id = document.getElementById('veh-id').value;
+                    const placa = document.getElementById('veh-placa').value.toUpperCase();
+                    const marca = document.getElementById('veh-marca').value;
+                    const modelo = document.getElementById('veh-modelo').value;
+                    const transito = document.getElementById('veh-transito').value;
+                    const obs = document.getElementById('veh-obs').value;
+                    
+                    if (id) {
+                        const veh = appData.vehiculos.find(v => v.id == id);
+                        if(veh) { veh.placa = placa; veh.marca = marca; veh.modelo = modelo; veh.transito = transito; veh.observaciones = obs; }
+                    } else {
+                        appData.vehiculos.push({
+                            id: Date.now(), placa, marca, modelo, transito, observaciones: obs,
+                            inversionistas: [], gastos: [], valorVenta: 0, fechaVenta: '', aplicaComision: false
+                        });
+                        appData.activeId = appData.vehiculos[appData.vehiculos.length-1].id;
+                    }
+                    UI.resetFormVehiculo(); DataManager.save(); UI.checkActiveVehicle(); UI.renderAll();
+                });
+
+                document.getElementById('form-inversionista').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const veh = DataManager.getActive();
+                    if(!veh) return;
+
+                    const id = document.getElementById('inv-id').value;
+                    const nombre = document.getElementById('inv-nombre').value;
+                    const aporte = parseFloat(document.getElementById('inv-aporte').value);
+                    
+                    if (id) {
+                        const inv = veh.inversionistas.find(i => i.id == id);
+                        if(inv) { inv.nombre = nombre; inv.aporte = aporte; }
+                    } else { veh.inversionistas.push({ id: Date.now(), nombre, aporte }); }
+                    UI.resetFormInv(); DataManager.save(); UI.renderAll();
+                });
+
+                document.getElementById('form-gasto').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const veh = DataManager.getActive();
+                    if(!veh) return;
+
+                    const id = document.getElementById('gasto-id').value;
+                    const fecha = document.getElementById('gasto-fecha').value;
+                    const concepto = document.getElementById('gasto-concepto').value;
+                    const desc = document.getElementById('gasto-desc').value;
+                    const valor = parseFloat(document.getElementById('gasto-valor').value);
+                    
+                    if (id) {
+                        const gas = veh.gastos.find(g => g.id == id);
+                        if(gas) { gas.fecha = fecha; gas.concepto = concepto; gas.desc = desc; gas.valor = valor; }
+                    } else { veh.gastos.push({ id: Date.now(), fecha, concepto, desc, valor }); }
+                    UI.resetFormGasto(); DataManager.save(); UI.renderAll();
+                });
+
+                document.getElementById('btn-guardar-venta').addEventListener('click', () => {
+                    const veh = DataManager.getActive();
+                    if(!veh) return;
+
+                    veh.valorVenta = parseFloat(document.getElementById('valor-venta-input').value) || 0;
+                    veh.fechaVenta = document.getElementById('fecha-venta-input').value || '';
+                    veh.aplicaComision = document.getElementById('chk-comision').checked;
+
+                    UI.resetFormVenta(); DataManager.save(); UI.renderAll();
+                });
+            },
+
+            setupImportFeature: () => {
+                document.getElementById('btn-import-inv').addEventListener('click', () => {
+                    const vehActual = DataManager.getActive();
+                    const fromId = document.getElementById('select-import-vehiculo').value;
+                    if(!vehActual || !fromId) { alert("Seleccione un vehículo origen para importar."); return; }
+
+                    const vehOrigen = appData.vehiculos.find(v => v.id == fromId);
+                    if(vehOrigen && vehOrigen.inversionistas.length > 0) {
+                        if(confirm(`¿Desea traer ${vehOrigen.inversionistas.length} inversionistas de la placa ${vehOrigen.placa}?`)) {
+                            const copia = vehOrigen.inversionistas.map(i => ({ id: Date.now() + Math.random(), nombre: i.nombre, aporte: i.aporte }));
+                            vehActual.inversionistas.push(...copia);
+                            DataManager.save(); UI.renderAll(); UI.resetFormInv();
+                        }
+                    } else { alert("El vehículo seleccionado no tiene inversionistas."); }
+                });
+            },
+
+            updateImportSelect: (currentId) => {
+                const selects = [document.getElementById('select-import-vehiculo'), document.getElementById('reinv-destino')];
+                
+                selects.forEach(select => {
+                    if(!select) return;
+                    const hasNewOption = select.querySelector('option[value="NEW"]');
+                    select.innerHTML = '<option value="">Seleccione vehículo...</option>';
+                    if(hasNewOption) {
+                        select.innerHTML += '<option value="NEW" style="font-weight:bold; color:var(--primary);">✨ CREAR UN NUEVO VEHÍCULO</option>';
+                    }
+                    
+                    appData.vehiculos.forEach(v => {
+                        if (select.id === 'select-import-vehiculo' && v.id === currentId) return;
+                        select.innerHTML += `<option value="${v.id}">${v.placa} - ${v.marca} ${v.modelo}</option>`;
+                    });
+                });
+            },
+
+            setupReinvertirFeature: () => {
+                document.getElementById('reinv-destino').addEventListener('change', (e) => {
+                    const fields = document.getElementById('reinv-new-veh-fields');
+                    const reqs = ['reinv-placa', 'reinv-marca', 'reinv-modelo'];
+                    if(e.target.value === 'NEW') {
+                        fields.classList.remove('d-none');
+                        reqs.forEach(id => document.getElementById(id).required = true);
+                    } else {
+                        fields.classList.add('d-none');
+                        reqs.forEach(id => document.getElementById(id).required = false);
+                    }
+                });
+
+                document.getElementById('form-reinvertir').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    const nombre = document.getElementById('reinv-nombre-val').value;
+                    const monto = parseFloat(document.getElementById('reinv-monto-val').value);
+                    const destino = document.getElementById('reinv-destino').value;
+
+                    if (destino === 'NEW') {
+                        const placa = document.getElementById('reinv-placa').value.toUpperCase();
+                        const marca = document.getElementById('reinv-marca').value;
+                        const modelo = document.getElementById('reinv-modelo').value;
+                        
+                        appData.vehiculos.push({
+                            id: Date.now(), placa, marca, modelo, transito: '', observaciones: '',
+                            inversionistas: [{ id: Date.now()+1, nombre, aporte: monto }], 
+                            gastos: [], valorVenta: 0, fechaVenta: '', aplicaComision: false
+                        });
+                        alert(`¡Éxito! Vehículo ${placa} creado y capital transferido.`);
+                    } else {
+                        const vehDestino = appData.vehiculos.find(v => v.id == destino);
+                        if (vehDestino) {
+                            vehDestino.inversionistas.push({ id: Date.now(), nombre, aporte: monto });
+                            alert(`¡Éxito! Capital reinvertido en el vehículo ${vehDestino.placa}.`);
+                        }
+                    }
+                    
+                    DataManager.save();
+                    UI.closeReinvertirModal();
+                    UI.renderAll();
+                    UI.updateImportSelect(appData.activeId);
+                });
+            },
+
+            closeReinvertirModal: () => {
+                document.getElementById('modal-reinvertir').classList.add('d-none');
+                document.getElementById('form-reinvertir').reset();
+                document.getElementById('reinv-new-veh-fields').classList.add('d-none');
+            },
+
+            resetFormVehiculo: () => {
+                document.getElementById('form-vehiculo').reset(); document.getElementById('veh-id').value = '';
+                document.getElementById('titulo-form-vehiculo').textContent = 'Registrar Nuevo Vehículo';
+                document.getElementById('panel-form-vehiculo').classList.remove('edit-mode');
+                UI.toggleForm('panel-form-vehiculo', 'btn-add-vehiculo', false);
+            },
+            resetFormInv: () => {
+                document.getElementById('form-inversionista').reset(); document.getElementById('inv-id').value = '';
+                document.getElementById('titulo-form-inv').textContent = 'Agregar Inversionista';
+                document.getElementById('titulo-form-inv').parentNode.classList.remove('edit-mode');
+                UI.toggleForm('panel-form-inv', 'btn-add-inv', false);
+            },
+            resetFormGasto: () => {
+                document.getElementById('form-gasto').reset(); document.getElementById('gasto-id').value = '';
+                document.getElementById('titulo-form-gasto').textContent = 'Registrar Gasto';
+                document.getElementById('titulo-form-gasto').parentNode.classList.remove('edit-mode');
+                UI.toggleForm('panel-form-gasto', 'btn-add-gasto', false);
+            },
+            resetFormVenta: () => {
+                UI.toggleForm('panel-form-venta', 'btn-add-venta', false);
+            },
+
+            renderAll: () => {
+                UI.renderVehiculosTable();
+                const actVeh = DataManager.getActive();
+                UI.renderDashboard(actVeh);
+                UI.renderInversionistas(actVeh);
+                UI.renderGastos(actVeh);
+                UI.renderVenta(actVeh);
+            },
+
+            renderVehiculosTable: () => {
+                const tbody = document.querySelector('#tabla-vehiculos tbody');
+                tbody.innerHTML = '';
+                
+                appData.vehiculos.forEach(v => {
+                    const tr = document.createElement('tr');
+                    const isSelected = appData.activeId === v.id;
+                    
+                    if(isSelected) tr.classList.add('active-row');
+                    
+                    // Clic en la fila para abrir, doble para editar
+                    tr.onclick = (e) => {
+                        // Evitar que el click en botones accione la fila
+                        if(e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
+                            AppActions.selectVehiculo(v.id);
+                        }
+                    };
+                    tr.ondblclick = () => AppActions.editVehiculo(v.id);
+
+                    let detalles = `<small style="color:var(--text-muted)">`;
+                    if(v.transito) detalles += `Tránsito: ${v.transito} | `;
+                    if(v.observaciones) detalles += `Obs: ${v.observaciones}`;
+                    detalles += `</small>`;
+
+                    tr.innerHTML = `
+                        <td><strong>${v.placa}</strong></td>
+                        <td>${v.marca}</td>
+                        <td>${v.modelo}</td>
+                        <td>${detalles}</td>
+                        <td class="action-buttons">
+                            <button class="btn-warning btn-sm" onclick="event.stopPropagation(); AppActions.editVehiculo(${v.id})" title="Editar"><i class="fas fa-edit"></i></button>
+                            <button class="btn-danger btn-sm" onclick="event.stopPropagation(); AppActions.deleteVehiculo(${v.id})" title="Eliminar"><i class="fas fa-trash"></i></button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            },
+
+            renderDashboard: (vehiculo) => {
+                document.getElementById('dash-aportes').textContent = Calc.formatMoney(Calc.getTotalAportes(vehiculo));
+                document.getElementById('dash-gastos').textContent = Calc.formatMoney(Calc.getTotalGastos(vehiculo));
+                document.getElementById('dash-venta').textContent = Calc.formatMoney(vehiculo ? vehiculo.valorVenta : 0);
+                document.getElementById('dash-neto').textContent = Calc.formatMoney(Calc.getDineroARepartir(vehiculo));
+            },
+
+            renderInversionistas: (vehiculo) => {
+                const tbody = document.querySelector('#tabla-inversionistas tbody');
+                tbody.innerHTML = '';
+                if(!vehiculo) return;
+
+                const total = Calc.getTotalAportes(vehiculo);
+
+                vehiculo.inversionistas.forEach(inv => {
+                    const porcentaje = total > 0 ? ((inv.aporte / total) * 100).toFixed(2) : 0;
+                    const tr = document.createElement('tr');
+                    tr.setAttribute('ondblclick', `AppActions.editInv(${inv.id})`);
+                    tr.innerHTML = `
+                        <td>${inv.nombre}</td>
+                        <td>${Calc.formatMoney(inv.aporte)}</td>
+                        <td>${porcentaje}%</td>
+                        <td class="action-buttons">
+                            <button class="btn-warning btn-sm" onclick="AppActions.editInv(${inv.id})"><i class="fas fa-edit"></i></button>
+                            <button class="btn-danger btn-sm" onclick="AppActions.deleteInv(${inv.id})"><i class="fas fa-trash"></i></button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                document.getElementById('inv-total-val').innerHTML = `<strong>${Calc.formatMoney(total)}</strong>`;
+            },
+
+            renderGastos: (vehiculo) => {
+                const tbody = document.querySelector('#tabla-gastos tbody');
+                tbody.innerHTML = '';
+                if(!vehiculo) return;
+
+                vehiculo.gastos.forEach(gas => {
+                    const tr = document.createElement('tr');
+                    tr.setAttribute('ondblclick', `AppActions.editGasto(${gas.id})`);
+                    tr.innerHTML = `
+                        <td>${Calc.formatDate(gas.fecha)}</td>
+                        <td><strong>${gas.concepto}</strong></td>
+                        <td>${gas.desc || '---'}</td>
+                        <td>${Calc.formatMoney(gas.valor)}</td>
+                        <td class="action-buttons">
+                            <button class="btn-warning btn-sm" onclick="AppActions.editGasto(${gas.id})"><i class="fas fa-edit"></i></button>
+                            <button class="btn-danger btn-sm" onclick="AppActions.deleteGasto(${gas.id})"><i class="fas fa-trash"></i></button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                const totalAportes = Calc.getTotalAportes(vehiculo);
+                const totalGastos = Calc.getTotalGastos(vehiculo);
+                const saldoRestante = totalAportes - totalGastos;
+
+                document.getElementById('gas-total-val').innerHTML = `<strong>${Calc.formatMoney(totalGastos)}</strong>`;
+                const colorSaldo = saldoRestante < 0 ? 'var(--danger)' : 'var(--primary)';
+                document.getElementById('gas-saldo-val').innerHTML = `<strong style="color: ${colorSaldo};">${Calc.formatMoney(saldoRestante)}</strong>`;
+            },
+
+            renderVenta: (vehiculo) => {
+                const inputValor = document.getElementById('valor-venta-input');
+                const inputFecha = document.getElementById('fecha-venta-input');
+                const chkComision = document.getElementById('chk-comision');
+                
+                const dispValor = document.getElementById('disp-valor-venta');
+                const dispFecha = document.getElementById('disp-fecha-venta');
+                const cardComision = document.getElementById('card-comision');
+                const dispComision = document.getElementById('disp-comision');
+                
+                const tbody = document.querySelector('#tabla-distribucion tbody');
+                const tfoot = document.querySelector('#tabla-distribucion tfoot');
+                
+                tbody.innerHTML = ''; tfoot.innerHTML = '';
+                
+                if(!vehiculo) { 
+                    inputValor.value = ''; inputFecha.value = ''; chkComision.checked = false;
+                    dispValor.textContent = '$0'; dispFecha.textContent = '---'; cardComision.style.display = 'none';
+                    return; 
+                }
+
+                inputValor.value = vehiculo.valorVenta || '';
+                inputFecha.value = vehiculo.fechaVenta || '';
+                chkComision.checked = vehiculo.aplicaComision || false;
+                
+                dispValor.textContent = Calc.formatMoney(vehiculo.valorVenta || 0);
+                dispFecha.textContent = vehiculo.fechaVenta ? Calc.formatDate(vehiculo.fechaVenta) : 'Sin registrar';
+                
+                // Mostrar/Ocultar y calcular Comisión UI
+                if(vehiculo.aplicaComision) {
+                    const comisionCalc = (vehiculo.valorVenta || 0) * 0.03;
+                    dispComision.textContent = Calc.formatMoney(comisionCalc);
+                    cardComision.style.display = 'flex';
+                } else {
+                    cardComision.style.display = 'none';
+                }
+                
+                const totalAportes = Calc.getTotalAportes(vehiculo);
+                const totalGastos = Calc.getTotalGastos(vehiculo);
+                const dineroARepartir = Calc.getDineroARepartir(vehiculo); 
+                
+                let sumInversion = 0, sumFaltante = 0, sumRecibir = 0, sumGranTotal = 0;
+
+                vehiculo.inversionistas.forEach(inv => {
+                    const pct = totalAportes > 0 ? (inv.aporte / totalAportes) : 0;
+                    const gastosProporcionales = totalGastos * pct;
+                    
+                    const inversionPersona = Math.min(gastosProporcionales, inv.aporte);
+                    const faltantePersona = gastosProporcionales > inv.aporte ? (gastosProporcionales - inv.aporte) : 0;
+                    const valorARecibir = dineroARepartir * pct; 
+                    const granTotalPersona = inversionPersona + valorARecibir;
+
+                    sumInversion += inversionPersona;
+                    sumFaltante += faltantePersona;
+                    sumRecibir += valorARecibir;
+                    sumGranTotal += granTotalPersona;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${inv.nombre}</td>
+                        <td>${Calc.formatMoney(inv.aporte)}</td>
+                        <td>${(pct * 100).toFixed(2)}%</td>
+                        <td style="color: var(--danger); font-weight: 500;">${Calc.formatMoney(inversionPersona)}</td>
+                        <td style="color: var(--warning); font-weight: 500;">${Calc.formatMoney(faltantePersona)}</td>
+                        <td style="color: ${valorARecibir >= 0 ? 'var(--success)' : 'var(--danger)'};">${Calc.formatMoney(valorARecibir)}</td>
+                        <td style="font-weight: bold; font-size: 1.1em; color: var(--primary);">${Calc.formatMoney(granTotalPersona)}</td>
+                        <td>
+                            <button class="btn-success btn-sm" onclick="AppActions.openReinvertir('${inv.nombre}', ${granTotalPersona})" title="Trasladar este capital a otro vehículo"><i class="fas fa-recycle"></i> Reinvertir</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                tfoot.innerHTML = `
+                    <tr class="table-total">
+                        <td colspan="3" style="text-align:right;"><strong>TOTALES:</strong></td>
+                        <td style="color: var(--danger);"><strong>${Calc.formatMoney(sumInversion)}</strong></td>
+                        <td style="color: var(--warning);"><strong>${Calc.formatMoney(sumFaltante)}</strong></td>
+                        <td style="color: ${sumRecibir >= 0 ? 'var(--success)' : 'var(--danger)'};"><strong>${Calc.formatMoney(sumRecibir)}</strong></td>
+                        <td style="color: var(--primary); font-size: 1.1em;"><strong>${Calc.formatMoney(sumGranTotal)}</strong></td>
+                        <td></td>
+                    </tr>
+                `;
+            },
+
+            setupFileManagement: () => {
+                document.getElementById('btn-export-json').addEventListener('click', () => {
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+                    const dl = document.createElement('a'); dl.setAttribute("href", dataStr); dl.setAttribute("download", "backup_compra.json");
+                    document.body.appendChild(dl); dl.click(); dl.remove();
+                });
+
+                const inputImport = document.getElementById('input-import-json');
+                document.getElementById('btn-import-json').addEventListener('click', () => inputImport.click());
+                
+                inputImport.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        try {
+                            const imported = JSON.parse(ev.target.result);
+                            if(imported.vehiculos) { 
+                                appData = imported; DataManager.save(); UI.checkActiveVehicle(); UI.renderAll();
+                                alert("Backup restaurado exitosamente.");
+                            } else { alert("Formato de archivo inválido."); }
+                        } catch (err) { alert("Error al leer el archivo JSON."); }
+                    };
+                    reader.readAsText(file);
+                });
+
+                document.getElementById('btn-export-html').addEventListener('click', () => ReportGenerator.generate('html'));
+                document.getElementById('btn-export-pdf').addEventListener('click', () => ReportGenerator.generate('pdf'));
+
+                document.getElementById('btn-clear-data').addEventListener('click', () => {
+                    if(confirm('¿BORRAR TODO EL SISTEMA? Esta acción es irreversible.')) {
+                        DataManager.clear(); UI.checkActiveVehicle(); UI.renderAll();
+                    }
+                });
+            }
+        };
+
+        window.AppActions = {
+            openReinvertir: (nombre, monto) => {
+                document.getElementById('reinv-nombre-val').value = nombre;
+                document.getElementById('reinv-monto-val').value = monto;
+                document.getElementById('reinv-nombre').textContent = nombre;
+                document.getElementById('reinv-monto-display').textContent = Calc.formatMoney(monto);
+                
+                document.getElementById('reinv-destino').value = '';
+                document.getElementById('reinv-new-veh-fields').classList.add('d-none');
+                
+                document.getElementById('modal-reinvertir').classList.remove('d-none');
+            },
+            selectVehiculo: (id) => {
+                appData.activeId = id; DataManager.save(); UI.checkActiveVehicle(); UI.renderAll();
+                // Opcional: Ir automáticamente al panel del vehículo
+                // document.querySelector('.menu-btn[data-target="dashboard"]').click();
+            },
+            deleteVehiculo: (id) => {
+                if(confirm('¿Eliminar este vehículo y todos sus datos?')) {
+                    appData.vehiculos = appData.vehiculos.filter(v => v.id !== id);
+                    if(appData.activeId === id) appData.activeId = null;
+                    DataManager.save(); UI.checkActiveVehicle(); UI.renderAll();
+                }
+            },
+            editVehiculo: (id) => {
+                const veh = appData.vehiculos.find(v => v.id === id);
+                if(!veh) return;
+                document.getElementById('veh-id').value = veh.id;
+                document.getElementById('veh-placa').value = veh.placa;
+                document.getElementById('veh-marca').value = veh.marca || '';
+                document.getElementById('veh-modelo').value = veh.modelo || '';
+                document.getElementById('veh-transito').value = veh.transito || '';
+                document.getElementById('veh-obs').value = veh.observaciones || '';
+                
+                document.getElementById('titulo-form-vehiculo').textContent = `Editando: ${veh.placa}`;
+                document.getElementById('panel-form-vehiculo').classList.add('edit-mode');
+                UI.toggleForm('panel-form-vehiculo', 'btn-add-vehiculo', true);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            },
+            deleteInv: (id) => {
+                const veh = DataManager.getActive();
+                if(veh && confirm('¿Eliminar inversionista?')) {
+                    veh.inversionistas = veh.inversionistas.filter(i => i.id !== id); DataManager.save(); UI.renderAll();
+                }
+            },
+            editInv: (id) => {
+                const veh = DataManager.getActive();
+                const inv = veh.inversionistas.find(i => i.id === id);
+                if(!inv) return;
+                
+                document.getElementById('inv-id').value = inv.id;
+                document.getElementById('inv-nombre').value = inv.nombre;
+                document.getElementById('inv-aporte').value = inv.aporte;
+
+                document.getElementById('titulo-form-inv').textContent = 'Editando Inversionista';
+                document.getElementById('titulo-form-inv').parentNode.classList.add('edit-mode');
+                UI.toggleForm('panel-form-inv', 'btn-add-inv', true);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            },
+            deleteGasto: (id) => {
+                const veh = DataManager.getActive();
+                if(veh && confirm('¿Eliminar gasto?')) {
+                    veh.gastos = veh.gastos.filter(g => g.id !== id); DataManager.save(); UI.renderAll();
+                }
+            },
+            editGasto: (id) => {
+                const veh = DataManager.getActive();
+                const gas = veh.gastos.find(g => g.id === id);
+                if(!gas) return;
+
+                document.getElementById('gasto-id').value = gas.id;
+                document.getElementById('gasto-fecha').value = gas.fecha || '';
+                document.getElementById('gasto-concepto').value = gas.concepto;
+                document.getElementById('gasto-desc').value = gas.desc || '';
+                document.getElementById('gasto-valor').value = gas.valor;
+
+                document.getElementById('titulo-form-gasto').textContent = 'Editando Gasto';
+                document.getElementById('titulo-form-gasto').parentNode.classList.add('edit-mode');
+                UI.toggleForm('panel-form-gasto', 'btn-add-gasto', true);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        };
+
+        const ReportGenerator = {
+            generate: (format) => {
+                const vehiculo = DataManager.getActive();
+                if (!vehiculo) { alert("No hay ningún vehículo seleccionado."); return; }
+
+                const config = {
+                    resumen: document.getElementById('chk-resumen').checked,
+                    inversores: document.getElementById('chk-inversores').checked,
+                    gastos: document.getElementById('chk-gastos').checked,
+                    distribucion: document.getElementById('chk-distribucion').checked
+                };
+
+                const totalAportes = Calc.getTotalAportes(vehiculo);
+                const totalGastos = Calc.getTotalGastos(vehiculo);
+                const dineroARepartir = Calc.getDineroARepartir(vehiculo);
+                const comision = vehiculo.aplicaComision ? (vehiculo.valorVenta || 0) * 0.03 : 0;
+
+                let htmlContent = `
+                    <div id="print-area" style="font-family: Arial, sans-serif; color: #333; max-width: 900px; margin: 0 auto; background: white; padding: 20px;">
+                        <h1 style="color: #1e3a8a; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-top: 0;">Reporte del Negocio</h1>
+                        
+                        <div style="font-size: 1.1rem; color: #475569; margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 8px; border-left: 5px solid #1e3a8a;">
+                            <strong>Placa:</strong> ${vehiculo.placa} <br>
+                            <strong>Marca:</strong> ${vehiculo.marca || 'N/A'} | <strong>Modelo (Año):</strong> ${vehiculo.modelo || 'N/A'}<br>
+                            <strong>Tránsito:</strong> ${vehiculo.transito || 'N/A'} <br>
+                            <strong>Observaciones:</strong> ${vehiculo.observaciones || 'Ninguna'}
+                        </div>
+                `;
+
+                const tableStyle = `width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 14px; table-layout: fixed; word-wrap: break-word;`;
+                const thStyle = `background-color: #f8fafc; padding: 8px; border: 1px solid #ddd; text-align: left; font-weight: bold;`;
+                const tdStyle = `padding: 8px; border: 1px solid #ddd; text-align: left;`;
+
+                if (config.resumen) {
+                    htmlContent += `
+                        <div style="background: #eff6ff; padding: 20px; border-radius: 8px; margin-bottom: 30px; display: flex; justify-content: space-between;">
+                            <div style="flex: 1;">
+                                <p style="margin: 5px 0;">Total Aportado: <strong>${Calc.formatMoney(totalAportes)}</strong></p>
+                                <p style="margin: 5px 0;">Total Gastos: <strong>${Calc.formatMoney(totalGastos)}</strong></p>
+                                <p style="margin: 5px 0;">Fondo Restante: <strong>${Calc.formatMoney(totalAportes - totalGastos)}</strong></p>
+                            </div>
+                            <div style="flex: 1; border-left: 2px solid #bfdbfe; padding-left: 15px;">
+                                <p style="margin: 5px 0;">Fecha Venta: <strong>${Calc.formatDate(vehiculo.fechaVenta)}</strong></p>
+                                <p style="margin: 5px 0;">Valor Venta: <strong>${Calc.formatMoney(vehiculo.valorVenta)}</strong></p>
+                                ${vehiculo.aplicaComision ? `<p style="margin: 5px 0; color:#f59e0b;">Comisión (3%): <strong>-${Calc.formatMoney(comision)}</strong></p>` : ''}
+                                <p style="margin: 5px 0; font-size: 1.1rem;">Ganancias: <strong>${Calc.formatMoney(dineroARepartir)}</strong></p>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                if (config.inversores && vehiculo.inversionistas.length > 0) {
+                    htmlContent += `<h2 style="color: #1e3a8a; font-size: 18px;">Inversionistas</h2><table style="${tableStyle}">
+                        <tr><th style="${thStyle}">Nombre</th><th style="${thStyle}">Aporte</th><th style="${thStyle}">%</th></tr>`;
+                    vehiculo.inversionistas.forEach(i => {
+                        const pct = totalAportes > 0 ? ((i.aporte/totalAportes)*100).toFixed(2) : 0;
+                        htmlContent += `<tr><td style="${tdStyle}">${i.nombre}</td><td style="${tdStyle}">${Calc.formatMoney(i.aporte)}</td><td style="${tdStyle}">${pct}%</td></tr>`;
+                    });
+                    htmlContent += `</table>`;
+                }
+
+                if (config.gastos && vehiculo.gastos.length > 0) {
+                    htmlContent += `<h2 style="color: #1e3a8a; font-size: 18px;">Gastos Registrados</h2><table style="${tableStyle}">
+                        <tr><th style="${thStyle}; width: 15%;">Fecha</th><th style="${thStyle}">Concepto</th><th style="${thStyle}">Valor</th></tr>`;
+                    vehiculo.gastos.forEach(g => {
+                        htmlContent += `<tr><td style="${tdStyle}">${Calc.formatDate(g.fecha)}</td><td style="${tdStyle}">${g.concepto}</td><td style="${tdStyle}">${Calc.formatMoney(g.valor)}</td></tr>`;
+                    });
+                    htmlContent += `<tr><td colspan="2" style="${tdStyle} text-align:right;"><strong>Total Gastos:</strong></td><td style="${tdStyle}"><strong>${Calc.formatMoney(totalGastos)}</strong></td></tr></table>`;
+                }
+
+                if (config.distribucion && vehiculo.inversionistas.length > 0) {
+                    let sumInv = 0, sumFalt = 0, sumRecibir = 0, sumGranTotal = 0;
+                    htmlContent += `<h2 style="color: #1e3a8a; font-size: 18px;">Distribución de Ganancias</h2><table style="${tableStyle}">
+                        <tr><th style="${thStyle}">Nombre</th><th style="${thStyle}">INVERSIÓN</th><th style="${thStyle}">FALTANTE</th><th style="${thStyle}">A Recibir</th><th style="${thStyle}">TOTAL</th></tr>`;
+                    
+                    vehiculo.inversionistas.forEach(inv => {
+                        const pct = totalAportes > 0 ? (inv.aporte / totalAportes) : 0;
+                        const gastosProporcionales = totalGastos * pct;
+                        const inversionPersona = Math.min(gastosProporcionales, inv.aporte);
+                        const faltantePersona = gastosProporcionales > inv.aporte ? (gastosProporcionales - inv.aporte) : 0;
+                        const valorARecibir = dineroARepartir * pct;
+                        const granTotalPersona = inversionPersona + valorARecibir;
+                        
+                        sumInv += inversionPersona; sumFalt += faltantePersona; sumRecibir += valorARecibir; sumGranTotal += granTotalPersona;
+                        
+                        htmlContent += `<tr><td style="${tdStyle}">${inv.nombre}</td><td style="${tdStyle} color:#ef4444;">${Calc.formatMoney(inversionPersona)}</td><td style="${tdStyle} color:#f59e0b;">${Calc.formatMoney(faltantePersona)}</td><td style="${tdStyle}">${Calc.formatMoney(valorARecibir)}</td><td style="${tdStyle} font-weight:bold; color:#1e3a8a;">${Calc.formatMoney(granTotalPersona)}</td></tr>`;
+                    });
+                    
+                    htmlContent += `<tr><td style="${tdStyle} text-align:right;"><strong>TOTALES:</strong></td><td style="${tdStyle} color:#ef4444;"><strong>${Calc.formatMoney(sumInv)}</strong></td><td style="${tdStyle} color:#f59e0b;"><strong>${Calc.formatMoney(sumFalt)}</strong></td><td style="${tdStyle}"><strong>${Calc.formatMoney(sumRecibir)}</strong></td><td style="${tdStyle} color:#1e3a8a;"><strong>${Calc.formatMoney(sumGranTotal)}</strong></td></tr></table>`;
+                }
+
+                htmlContent += `<p style="text-align:center; color:#777; margin-top:30px; font-size:12px;">Generado por App COMPRA - ${new Date().toLocaleDateString()}</p></div>`;
+
+                if (format === 'html') {
+                    const blob = new Blob([`<html><head><meta charset="UTF-8"><title>Reporte ${vehiculo.placa}</title></head><body style="background:#f1f5f9; padding:20px;">${htmlContent}</body></html>`], { type: 'text/html;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a'); a.href = url; a.download = `Reporte_${vehiculo.placa}.html`;
+                    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+                } else if (format === 'pdf') {
+                    const pdfContainer = document.getElementById('pdf-container');
+                    pdfContainer.innerHTML = htmlContent;
+                    pdfContainer.style.display = 'block'; 
+                    
+                    const opt = {
+                        margin:       10,
+                        filename:     `Reporte_${vehiculo.placa}.pdf`,
+                        image:        { type: 'jpeg', quality: 0.98 },
+                        html2canvas:  { scale: 2, useCORS: true },
+                        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    };
+
+                    html2pdf().set(opt).from(pdfContainer.firstElementChild).save().then(() => {
+                        pdfContainer.style.display = 'none';
+                        pdfContainer.innerHTML = '';
+                    });
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', UI.init);
+    </script>
 </body>
 </html>
